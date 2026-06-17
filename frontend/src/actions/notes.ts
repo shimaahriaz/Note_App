@@ -1,13 +1,31 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
-import { notesApi } from "@/lib/api/notes"
-import type { CreateNoteDTO, UpdateNoteDTO } from "@/types/note"
+import { auth } from "@/auth"
+import type { CreateNoteDTO, UpdateNoteDTO, Note } from "@/types/note"
 
-export async function createNoteAction(data: CreateNoteDTO) {
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+
+async function getAuthHeader(): Promise<{ Authorization: string }> {
+  const session = await auth()
+  if (!session?.accessToken) throw new Error("Unauthorized")
+  return { Authorization: `Bearer ${session.accessToken}` }
+}
+
+export async function createNoteAction(
+  data: CreateNoteDTO
+): Promise<{ data: Note | null; error: string | null }> {
   try {
-    const note = await notesApi.create(data)
-    revalidatePath("/")
+    const authHeader = await getAuthHeader()
+    const res = await fetch(`${API_URL}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeader },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      return { data: null, error: err.detail ?? "Failed to create note" }
+    }
+    const note: Note = await res.json()
     return { data: note, error: null }
   } catch (error) {
     return {
@@ -17,11 +35,22 @@ export async function createNoteAction(data: CreateNoteDTO) {
   }
 }
 
-export async function updateNoteAction(id: number, data: UpdateNoteDTO) {
+export async function updateNoteAction(
+  id: number,
+  data: UpdateNoteDTO
+): Promise<{ data: Note | null; error: string | null }> {
   try {
-    const note = await notesApi.update(id, data)
-    revalidatePath("/")
-    revalidatePath(`/notes/${id}`)
+    const authHeader = await getAuthHeader()
+    const res = await fetch(`${API_URL}/notes/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeader },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      return { data: null, error: err.detail ?? "Failed to update note" }
+    }
+    const note: Note = await res.json()
     return { data: note, error: null }
   } catch (error) {
     return {
@@ -31,10 +60,19 @@ export async function updateNoteAction(id: number, data: UpdateNoteDTO) {
   }
 }
 
-export async function deleteNoteAction(id: number) {
+export async function deleteNoteAction(
+  id: number
+): Promise<{ error: string | null }> {
   try {
-    await notesApi.delete(id)
-    revalidatePath("/")
+    const authHeader = await getAuthHeader()
+    const res = await fetch(`${API_URL}/notes/${id}`, {
+      method: "DELETE",
+      headers: authHeader,
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      return { error: err.detail ?? "Failed to delete note" }
+    }
     return { error: null }
   } catch (error) {
     return {

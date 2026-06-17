@@ -7,26 +7,21 @@ import {
   updateNoteAction,
   deleteNoteAction,
 } from "@/actions/notes"
-
 import { toast } from "sonner"
 import type { CreateNoteDTO, UpdateNoteDTO, Note } from "@/types/note"
 
-// ─── Query Keys ───────────────────────────────────────
 export const noteKeys = {
   all: ["notes"] as const,
   detail: (id: number) => ["notes", id] as const,
 }
 
-// ─── GET ALL ───────────────────────────────────────────
 export function useNotes() {
   return useQuery({
     queryKey: noteKeys.all,
     queryFn: notesApi.getAll,
-    staleTime: 60 * 1000,
   })
 }
 
-// ─── GET BY ID ─────────────────────────────────────────
 export function useNote(id: number) {
   return useQuery({
     queryKey: noteKeys.detail(id),
@@ -35,7 +30,6 @@ export function useNote(id: number) {
   })
 }
 
-// ─── CREATE ────────────────────────────────────────────
 export function useCreateNote() {
   const queryClient = useQueryClient()
 
@@ -53,9 +47,11 @@ export function useCreateNote() {
       queryClient.setQueryData<Note[]>(noteKeys.all, (old = []) => [
         ...old,
         {
-          id: Date.now(),
+          id: -Date.now(),
+          user_id: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
           ...newNote,
-         
         },
       ])
 
@@ -75,7 +71,6 @@ export function useCreateNote() {
   })
 }
 
-// ─── UPDATE ────────────────────────────────────────────
 export function useUpdateNote() {
   const queryClient = useQueryClient()
 
@@ -84,19 +79,12 @@ export function useUpdateNote() {
       const result = await updateNoteAction(id, data)
       if (result.error) throw new Error(result.error)
       return result.data!
-    }, 
-    
+    },
+
     onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) })
       await queryClient.cancelQueries({ queryKey: noteKeys.all })
 
-      const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id))
       const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.all)
-
-      
-      queryClient.setQueryData<Note>(noteKeys.detail(id), (old) =>
-        old ? { ...old, ...data } : old
-      )
 
       queryClient.setQueryData<Note[]>(noteKeys.all, (old = []) =>
         old.map((note) =>
@@ -104,32 +92,22 @@ export function useUpdateNote() {
         )
       )
 
-      return { previousNote, previousNotes }
+      return { previousNotes }
     },
 
-    onError: (err, { id }, context) => {
-      if (context?.previousNote) {
-        queryClient.setQueryData(noteKeys.detail(id), context.previousNote)
-      }
+    onError: (_err, { id: _id }, context) => {
       if (context?.previousNotes) {
         queryClient.setQueryData(noteKeys.all, context.previousNotes)
       }
-      toast.error(err.message ?? "Failed to update note")
+      toast.error("Failed to update note")
     },
-    
-    onSettled: (_data, _err, { id }) => {
-      queryClient.invalidateQueries({
-        queryKey: noteKeys.detail(id),
-      })
 
-      queryClient.invalidateQueries({
-        queryKey: noteKeys.all,
-      })
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.all })
     },
   })
 }
 
-// ─── DELETE ────────────────────────────────────────────
 export function useDeleteNote() {
   const queryClient = useQueryClient()
 

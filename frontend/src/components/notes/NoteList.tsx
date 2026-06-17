@@ -19,20 +19,18 @@ interface NoteListProps {
 }
 
 export function NoteList({ searchQuery }: NoteListProps) {
-  const { data: notes, isLoading, isError, error } = useNotes();
+  const { data: notes, isLoading, isError, error, refetch } = useNotes();
   const [editingNote, setEditingNote] = useState<Note | null>(null);
-  console.log(isLoading, isError, notes);
-  // ─── Loading ───────────────────────────────────────
+
   if (isLoading) {
     return <NotesSkeleton />;
   }
 
-  // ─── Error ─────────────────────────────────────────
   if (isError) {
     return (
       <NotesError
         message={error.message}
-        onRetry={() => window.location.reload()}
+        onRetry={refetch}
       />
     );
   }

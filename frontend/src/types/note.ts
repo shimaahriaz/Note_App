@@ -2,6 +2,9 @@ export interface Note {
   id: number
   title: string
   content: string
+  user_id: number
+  created_at: string
+  updated_at: string
 }
 
 export type CreateNoteDTO = {
@@ -9,6 +12,6 @@ export type CreateNoteDTO = {
   content: string
 }
 
-export type UpdateNoteDTO = Partial<CreateNoteDTO>
+export type UpdateNoteDTO = CreateNoteDTO
 
 export type NotesResponse = Note[]
