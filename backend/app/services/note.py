@@ -40,3 +40,6 @@ def delete(db: Session, note_id: int, user_id: int) -> None:
     note = get_by_id(db, note_id, user_id)
     db.delete(note)
     db.commit()
+    
+    
+    

@@ -80,3 +80,32 @@ export async function deleteNoteAction(
     }
   }
 }
+
+export async function askAiAction(
+  noteId: number,
+  message: string,
+  draftContent?: string,
+  draftTitle?: string,
+): Promise<{ data: { reply: string; updated_content?: string | null; updated_title?: string | null } | null; error: string | null }> {
+  try {
+    const authHeader = await getAuthHeader()
+    const res = await fetch(`${API_URL}/notes/${noteId}/ai-chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeader },
+      body: JSON.stringify({ message, draft_content: draftContent, draft_title: draftTitle }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json()
+      return { data: null, error: err.detail ?? "Failed to ask AI" }
+    }
+
+    const data = await res.json()
+    return { data, error: null }
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : "Failed to ask AI",
+    }
+  }
+}

@@ -67,15 +67,18 @@ export function NoteList({ searchQuery }: NoteListProps) {
       <Dialog open={!!editingNote} onOpenChange={() => setEditingNote(null)}>
         <DialogContent
           className="
-    rounded-2xl
-    border border-amber-200
-    bg-amber-50
-    p-0
-    overflow-hidden
-  "
+            rounded-2xl
+            border border-amber-200/50
+            bg-white
+            p-0
+            overflow-hidden
+            shadow-2xl
+          "
         >
-          <DialogHeader className="border-b border-amber-200 bg-amber-50 px-6 py-4">
-            <DialogTitle className="text-amber-900">Edit Note</DialogTitle>
+          <DialogHeader className="border-b border-amber-100 bg-amber-50/50 px-6 py-4">
+            <DialogTitle className="text-amber-950 font-bold text-base flex items-center gap-2">
+              Edit Note <span className="text-[10px] font-bold text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded-md uppercase tracking-wider">✏️ Mode</span>
+            </DialogTitle>
           </DialogHeader>
           {editingNote && (
             <NoteForm
